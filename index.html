@@ -1,0 +1,88 @@
+<html>
+    <head>
+        <script src="js/aws-sdk.js"></script>
+        <script src="js/aws-cognito-sdk.min.js"></script>
+        <script src="js/amazon-cognito-identity.min.js"></script>
+    <script>
+    var idToken = null;
+
+    function checkLogin() {
+        var url_string = window.location.href;
+        var url = new URL(url_string);
+        idToken = url.searchParams.get("id_token");
+        if (idToken != null) {
+            document.getElementById("welcomeMsg").innerHTML = "signed in";
+            auth();
+        }
+    }
+    function auth() {
+    AWS.config.update({
+      region: "ap-south-1",
+    //  endpoint: 'http://localhost:8000', // If you use dynamoDB installed locally
+    //  accessKeyId: "(ACCESS_KEY_ID)",
+    //  secretAccessKey: "(SECRET_ACCESS_KEY)"
+
+    });
+
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+            IdentityPoolId : 'ap-south-1:5ba34dd8-a745-4869-ad29-8913224fe7fe',
+            Logins : {
+              "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_4kksUyzCB": idToken
+            }
+          });
+    }
+
+    function insertItem() {
+    var docClient = new AWS.DynamoDB.DocumentClient();
+
+    var params = {
+        TableName :"Person",
+        Item:{
+            "FirstName": "John", // Partition Key
+            "LastName": "Smith", // Sort Key
+            "info": {
+                "FavoriteColor": "blue",
+                "YearOfBirth": 1942
+            }
+        }
+    };
+    docClient.put(params, function(err, data) {
+        if (err) {
+            document.getElementById('textarea').innerHTML = "Unable to add item: " + "\n" + JSON.stringify(err, undefined, 2);
+        } else {
+            document.getElementById('textarea').innerHTML = "PutItem succeeded: " + "\n" + JSON.stringify(data, undefined, 2);
+        }
+    });
+    }
+
+    function readItem() {
+
+    var docClient = new AWS.DynamoDB.DocumentClient();
+
+    var params = {
+        TableName: "Person",
+        Key:{
+            "FirstName": "John",// Partition Key
+            "LastName": "Smith" // Sort/Range Key
+        }
+    };
+    docClient.get(params, function(err, data) {
+        if (err) {
+            document.getElementById('textarea').innerHTML = "Unable to read item: " + "\n" + JSON.stringify(err, undefined, 2);
+        } else {
+            document.getElementById('textarea').innerHTML = "GetItem succeeded: " + "\n" + JSON.stringify(data, undefined, 2);
+        }
+    });
+    }
+
+    </script>
+    </head>
+    <body>
+        <a href="https://webbest111.auth.ap-south-1.amazoncognito.com/login?client_id=3lqqb2fg92g0t8orv1jrlvq6rp&response_type=token&scope=phone+email+openid+aws.cognito.signin.user.admin+profile&redirect_uri=https://viswaamitcodes.github.io/Pure_html_website/"> sign in </a>
+    <br>
+    <br>
+    <button value="Insert_Item" onclick="insertItem();"> </button>
+    <button type="buttton" value="Read_Item" onclick="readItem();"></button>
+        <textarea readonly id="textarea" style="width: 400px; height: 600px;"></textarea>
+</body>
+</html>
